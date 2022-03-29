@@ -11,28 +11,22 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import telran.java41.accounting.dao.UserAccountRepository;
-import telran.java41.accounting.model.UserAccount;
+import lombok.AllArgsConstructor;
 import telran.java41.forum.dao.PostRepository;
 import telran.java41.forum.model.Post;
+import telran.java41.security.context.SecurityContext;
+import telran.java41.security.context.User;
 
 @Service
 @Order(50)
+@AllArgsConstructor
 public class DeletePostFilter implements Filter {
 
 	PostRepository postRepository;
-	UserAccountRepository repository;
-	
-
-	@Autowired
-	public DeletePostFilter(PostRepository postRepository, UserAccountRepository repository) {
-		this.postRepository = postRepository;
-		this.repository = repository;
-	}
+	SecurityContext context;
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
@@ -50,8 +44,8 @@ public class DeletePostFilter implements Filter {
 				return;
 			}
 			String author = post.getAuthor();
-			UserAccount userAccount = repository.findById(principal.getName()).get();
-			if (!(principal.getName().equals(author) || userAccount.getRoles().contains("MODERATOR".toUpperCase()))) {
+			User user = context.getUser(principal.getName());
+			if (!(principal.getName().equals(author) || user.getRoles().contains("MODERATOR".toUpperCase()))) {
 				response.sendError(403);
 				return;
 			}

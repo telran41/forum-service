@@ -10,38 +10,37 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import lombok.AllArgsConstructor;
-import telran.java41.security.context.SecurityContext;
-import telran.java41.security.context.User;
+import telran.java41.security.service.SessionService;
 
 @Service
-@Order(20)
-@AllArgsConstructor
-public class AdminFilter implements Filter {
-	
-	SecurityContext context;
+@Order(5)
+public class CleanSessionForLoginFilter implements Filter {
+
+	SessionService sessionService;
+
+	@Autowired
+	public CleanSessionForLoginFilter(SessionService sessionService) {
+		this.sessionService = sessionService;
+	}
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
-		HttpServletResponse response = (HttpServletResponse) resp;	
+		HttpServletResponse response = (HttpServletResponse) resp;
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
-			User user = context.getUser(request.getUserPrincipal().getName());
-			if(!user.getRoles().contains("Administrator".toUpperCase())) {
-				response.sendError(403);
-				return;
-			}
+			String sessionId = request.getSession().getId();
+			sessionService.removeUser(sessionId);
 		}
 		chain.doFilter(request, response);
 	}
 
 	private boolean checkEndPoint(String method, String path) {
-
-		return path.matches("/account/user/\\w+/role/\\w+/?");
+		return path.matches("/account/login/?");
 	}
 
 }
